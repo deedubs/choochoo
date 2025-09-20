@@ -81,16 +81,16 @@ This repository uses GitHub Actions for automated testing and quality assurance:
 
 ### Setting Up Branch Protection
 
-To require passing tests for pull request merges, configure branch protection rules:
+To require passing tests for pull request merges, configure branch protection rules. For detailed step-by-step instructions, see [docs/branch-protection.md](docs/branch-protection.md).
 
-1. Go to your repository **Settings** → **Branches**
-2. Click **Add rule** or edit the existing rule for `main`
-3. Enable the following options:
+**Quick Setup:**
+1. Go to repository **Settings** → **Branches**
+2. Click **Add rule** for `main` branch
+3. Enable:
    - ☑️ **Require a pull request before merging**
    - ☑️ **Require status checks to pass before merging**
    - ☑️ **Require branches to be up to date before merging**
    - Search and select the **CI** status check
-   - ☑️ **Restrict pushes that create files larger than 100MB**
    - ☑️ **Include administrators** (recommended)
 
 This ensures all code changes go through proper review and testing before being merged.

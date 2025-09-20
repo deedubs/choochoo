@@ -72,16 +72,52 @@ The server can be configured using environment variables:
 
 ## Development
 
+### Running the Server
+
 Run the server in development mode:
 ```bash
 go run main.go
 ```
 
-Test the webhook endpoint:
+### Testing
+
+This project includes comprehensive tests to ensure functionality works as expected. **All contributions must include tests.**
+
+Run tests:
+```bash
+# Run all tests
+make test
+
+# Run tests with coverage report
+make coverage
+
+# Or using go directly
+go test -v
+go test -v -cover
+```
+
+### Manual Testing
+
+Test the webhook endpoint manually:
 ```bash
 curl -X POST http://localhost:8080/webhook \
   -H "Content-Type: application/json" \
   -H "X-GitHub-Event: push" \
   -H "X-GitHub-Delivery: test-delivery-id" \
   -d '{"action":"push","repository":{"full_name":"user/repo"},"sender":{"login":"username"}}'
+```
+
+### Contributing
+
+Before contributing, please read [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines and testing requirements.
+
+### Available Make Targets
+
+```bash
+make test      # Run all tests
+make coverage  # Run tests with coverage report
+make build     # Build the application
+make run       # Run the application locally
+make clean     # Clean build artifacts
+make help      # Show available targets
 ```

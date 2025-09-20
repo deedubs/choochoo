@@ -126,7 +126,7 @@ func (ws *WebhookServer) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	log.Printf("Received %s event from %s (delivery: %s, sender: %s)", 
+	log.Printf("Received %s event from %s (delivery: %s, sender: %s)",
 		eventType, repoName, deliveryID, senderLogin)
 
 	if event.Action != "" {
@@ -148,7 +148,7 @@ func (ws *WebhookServer) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	response := map[string]string{
-		"status": "healthy",
+		"status":  "healthy",
 		"service": "choochoo-webhook-server",
 	}
 	json.NewEncoder(w).Encode(response)
@@ -157,7 +157,7 @@ func (ws *WebhookServer) handleHealth(w http.ResponseWriter, r *http.Request) {
 // Start starts the webhook server
 func (ws *WebhookServer) Start() {
 	mux := http.NewServeMux()
-	
+
 	// Register routes
 	mux.HandleFunc("/webhook", ws.handleWebhook)
 	mux.HandleFunc("/health", ws.handleHealth)
@@ -172,7 +172,7 @@ func (ws *WebhookServer) Start() {
 	log.Printf("Starting choochoo webhook server on port %s", ws.port)
 	log.Printf("Webhook endpoint: http://localhost:%s/webhook", ws.port)
 	log.Printf("Health check: http://localhost:%s/health", ws.port)
-	
+
 	if err := http.ListenAndServe(":"+ws.port, mux); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}

@@ -85,7 +85,7 @@ func TestNewWebhookServer_WithSecret(t *testing.T) {
 func TestValidateSignature_NoSecret(t *testing.T) {
 	server := createTestWebhookServer("")
 	payload := []byte(`{"test": "data"}`)
-	
+
 	// Should return true when no secret is set (skip validation)
 	result := server.validateSignature(payload, "any-signature")
 	if !result {
@@ -98,7 +98,7 @@ func TestValidateSignature_ValidSignature(t *testing.T) {
 	server := createTestWebhookServer(secret)
 	payload := []byte(`{"test": "data"}`)
 	signature := generateSignature(payload, secret)
-	
+
 	result := server.validateSignature(payload, signature)
 	if !result {
 		t.Error("Expected validation to pass with valid signature")
@@ -108,7 +108,7 @@ func TestValidateSignature_ValidSignature(t *testing.T) {
 func TestValidateSignature_InvalidSignature(t *testing.T) {
 	server := createTestWebhookServer("test-secret")
 	payload := []byte(`{"test": "data"}`)
-	
+
 	result := server.validateSignature(payload, "sha256=invalid-signature")
 	if result {
 		t.Error("Expected validation to fail with invalid signature")
@@ -118,7 +118,7 @@ func TestValidateSignature_InvalidSignature(t *testing.T) {
 func TestValidateSignature_MissingPrefix(t *testing.T) {
 	server := createTestWebhookServer("test-secret")
 	payload := []byte(`{"test": "data"}`)
-	
+
 	result := server.validateSignature(payload, "invalid-signature-without-prefix")
 	if result {
 		t.Error("Expected validation to fail with signature missing sha256= prefix")
@@ -128,7 +128,7 @@ func TestValidateSignature_MissingPrefix(t *testing.T) {
 func TestValidateSignature_InvalidHex(t *testing.T) {
 	server := createTestWebhookServer("test-secret")
 	payload := []byte(`{"test": "data"}`)
-	
+
 	result := server.validateSignature(payload, "sha256=invalid-hex-characters!")
 	if result {
 		t.Error("Expected validation to fail with invalid hex characters")
@@ -139,22 +139,22 @@ func TestValidateSignature_InvalidHex(t *testing.T) {
 
 func TestHandleHealth(t *testing.T) {
 	server := createTestWebhookServer("")
-	
+
 	req := httptest.NewRequest("GET", "/health", nil)
 	rr := httptest.NewRecorder()
-	
+
 	server.handleHealth(rr, req)
-	
+
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("Expected status code %d, got %d", http.StatusOK, status)
 	}
-	
+
 	expected := `{"service":"choochoo-webhook-server","status":"healthy"}`
 	body := strings.TrimSpace(rr.Body.String())
 	if body != expected {
 		t.Errorf("Expected body %s, got %s", expected, body)
 	}
-	
+
 	contentType := rr.Header().Get("Content-Type")
 	if contentType != "application/json" {
 		t.Errorf("Expected Content-Type application/json, got %s", contentType)
@@ -165,12 +165,12 @@ func TestHandleHealth(t *testing.T) {
 
 func TestHandleWebhook_InvalidMethod(t *testing.T) {
 	server := createTestWebhookServer("")
-	
+
 	req := httptest.NewRequest("GET", "/webhook", nil)
 	rr := httptest.NewRecorder()
-	
+
 	server.handleWebhook(rr, req)
-	
+
 	if status := rr.Code; status != http.StatusMethodNotAllowed {
 		t.Errorf("Expected status code %d, got %d", http.StatusMethodNotAllowed, status)
 	}
@@ -178,7 +178,7 @@ func TestHandleWebhook_InvalidMethod(t *testing.T) {
 
 func TestHandleWebhook_ValidRequest_NoSecret(t *testing.T) {
 	server := createTestWebhookServer("")
-	
+
 	payload := map[string]interface{}{
 		"action": "push",
 		"repository": map[string]interface{}{
@@ -188,26 +188,26 @@ func TestHandleWebhook_ValidRequest_NoSecret(t *testing.T) {
 			"login": "testuser",
 		},
 	}
-	
+
 	jsonPayload, _ := json.Marshal(payload)
 	req := httptest.NewRequest("POST", "/webhook", bytes.NewBuffer(jsonPayload))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-GitHub-Event", "push")
 	req.Header.Set("X-GitHub-Delivery", "test-delivery-id")
-	
+
 	rr := httptest.NewRecorder()
 	server.handleWebhook(rr, req)
-	
+
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("Expected status code %d, got %d", http.StatusOK, status)
 	}
-	
+
 	var response map[string]string
 	err := json.Unmarshal(rr.Body.Bytes(), &response)
 	if err != nil {
 		t.Errorf("Failed to parse response JSON: %v", err)
 	}
-	
+
 	if response["status"] != "success" {
 		t.Errorf("Expected status 'success', got %s", response["status"])
 	}
@@ -216,7 +216,7 @@ func TestHandleWebhook_ValidRequest_NoSecret(t *testing.T) {
 func TestHandleWebhook_ValidRequest_WithSecret(t *testing.T) {
 	secret := "test-secret"
 	server := createTestWebhookServer(secret)
-	
+
 	payload := map[string]interface{}{
 		"action": "push",
 		"repository": map[string]interface{}{
@@ -226,19 +226,19 @@ func TestHandleWebhook_ValidRequest_WithSecret(t *testing.T) {
 			"login": "testuser",
 		},
 	}
-	
+
 	jsonPayload, _ := json.Marshal(payload)
 	signature := generateSignature(jsonPayload, secret)
-	
+
 	req := httptest.NewRequest("POST", "/webhook", bytes.NewBuffer(jsonPayload))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-GitHub-Event", "push")
 	req.Header.Set("X-GitHub-Delivery", "test-delivery-id")
 	req.Header.Set("X-Hub-Signature-256", signature)
-	
+
 	rr := httptest.NewRecorder()
 	server.handleWebhook(rr, req)
-	
+
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("Expected status code %d, got %d", http.StatusOK, status)
 	}
@@ -246,25 +246,25 @@ func TestHandleWebhook_ValidRequest_WithSecret(t *testing.T) {
 
 func TestHandleWebhook_InvalidSignature(t *testing.T) {
 	server := createTestWebhookServer("test-secret")
-	
+
 	payload := map[string]interface{}{
 		"action": "push",
 		"repository": map[string]interface{}{
 			"full_name": "test/repo",
 		},
 	}
-	
+
 	jsonPayload, _ := json.Marshal(payload)
-	
+
 	req := httptest.NewRequest("POST", "/webhook", bytes.NewBuffer(jsonPayload))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-GitHub-Event", "push")
 	req.Header.Set("X-GitHub-Delivery", "test-delivery-id")
 	req.Header.Set("X-Hub-Signature-256", "sha256=invalid-signature")
-	
+
 	rr := httptest.NewRecorder()
 	server.handleWebhook(rr, req)
-	
+
 	if status := rr.Code; status != http.StatusUnauthorized {
 		t.Errorf("Expected status code %d, got %d", http.StatusUnauthorized, status)
 	}
@@ -272,17 +272,17 @@ func TestHandleWebhook_InvalidSignature(t *testing.T) {
 
 func TestHandleWebhook_InvalidJSON(t *testing.T) {
 	server := createTestWebhookServer("")
-	
+
 	invalidJSON := []byte(`{"invalid": json}`)
-	
+
 	req := httptest.NewRequest("POST", "/webhook", bytes.NewBuffer(invalidJSON))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-GitHub-Event", "push")
 	req.Header.Set("X-GitHub-Delivery", "test-delivery-id")
-	
+
 	rr := httptest.NewRecorder()
 	server.handleWebhook(rr, req)
-	
+
 	if status := rr.Code; status != http.StatusBadRequest {
 		t.Errorf("Expected status code %d, got %d", http.StatusBadRequest, status)
 	}
@@ -290,15 +290,15 @@ func TestHandleWebhook_InvalidJSON(t *testing.T) {
 
 func TestHandleWebhook_EmptyPayload(t *testing.T) {
 	server := createTestWebhookServer("")
-	
+
 	req := httptest.NewRequest("POST", "/webhook", bytes.NewBuffer([]byte{}))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-GitHub-Event", "push")
 	req.Header.Set("X-GitHub-Delivery", "test-delivery-id")
-	
+
 	rr := httptest.NewRecorder()
 	server.handleWebhook(rr, req)
-	
+
 	if status := rr.Code; status != http.StatusBadRequest {
 		t.Errorf("Expected status code %d, got %d", http.StatusBadRequest, status)
 	}
@@ -308,20 +308,20 @@ func TestHandleWebhook_EmptyPayload(t *testing.T) {
 
 func TestGitHubEvent_OptionalFields(t *testing.T) {
 	server := createTestWebhookServer("")
-	
+
 	// Test with minimal payload (no action, repository, or sender)
 	payload := map[string]interface{}{}
-	
+
 	jsonPayload, _ := json.Marshal(payload)
-	
+
 	req := httptest.NewRequest("POST", "/webhook", bytes.NewBuffer(jsonPayload))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-GitHub-Event", "ping")
 	req.Header.Set("X-GitHub-Delivery", "test-delivery-id")
-	
+
 	rr := httptest.NewRecorder()
 	server.handleWebhook(rr, req)
-	
+
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("Expected status code %d, got %d", http.StatusOK, status)
 	}
@@ -331,7 +331,7 @@ func TestGitHubEvent_OptionalFields(t *testing.T) {
 
 func TestWebhookServer_RoutingIntegration(t *testing.T) {
 	server := createTestWebhookServer("")
-	
+
 	// Create a test server with the same routing as the real server
 	mux := http.NewServeMux()
 	mux.HandleFunc("/webhook", server.handleWebhook)
@@ -344,39 +344,39 @@ func TestWebhookServer_RoutingIntegration(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Choochoo GitHub Webhook Server"))
 	})
-	
+
 	testServer := httptest.NewServer(mux)
 	defer testServer.Close()
-	
+
 	// Test health endpoint
 	resp, err := http.Get(testServer.URL + "/health")
 	if err != nil {
 		t.Fatalf("Failed to call health endpoint: %v", err)
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status 200 for health endpoint, got %d", resp.StatusCode)
 	}
-	
+
 	// Test root endpoint
 	resp, err = http.Get(testServer.URL + "/")
 	if err != nil {
 		t.Fatalf("Failed to call root endpoint: %v", err)
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status 200 for root endpoint, got %d", resp.StatusCode)
 	}
-	
+
 	// Test 404 for unknown path
 	resp, err = http.Get(testServer.URL + "/unknown")
 	if err != nil {
 		t.Fatalf("Failed to call unknown endpoint: %v", err)
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusNotFound {
 		t.Errorf("Expected status 404 for unknown endpoint, got %d", resp.StatusCode)
 	}

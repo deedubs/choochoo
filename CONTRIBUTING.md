@@ -140,11 +140,36 @@ When creating test helpers:
 
 ### Continuous Integration
 
-All changes must pass:
-- All existing tests
-- New tests for added functionality
-- Code compilation
-- Any configured linting tools
+This repository uses automated CI via GitHub Actions to ensure code quality. All changes must pass:
+
+- **Automated Tests**: All existing tests must pass (`make test`)
+- **Test Coverage**: Coverage reports are generated (`make coverage`) 
+- **Build Verification**: Code must compile successfully (`make build`)
+- **Integration Checks**: Full verification suite (`make verify`)
+
+#### CI Process
+
+1. **On Pull Requests**: CI automatically runs on all pull requests to `main`
+2. **On Push to Main**: CI runs on direct pushes to the main branch
+3. **Branch Protection**: The main branch requires passing CI checks before merging
+4. **Status Checks**: Pull requests show CI status and block merging if tests fail
+
+#### Local Development
+
+Before submitting a pull request, ensure your changes pass locally:
+
+```bash
+# Run the same checks as CI
+make verify
+
+# Or run individual steps
+make deps    # Install dependencies
+make test    # Run tests
+make coverage # Generate coverage report
+make build   # Build application
+```
+
+This mirrors the CI pipeline and helps catch issues early.
 
 ## Questions?
 

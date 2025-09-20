@@ -70,6 +70,31 @@ The server can be configured using environment variables:
 - Always use HTTPS in production environments
 - Keep your webhook secret secure and rotate it regularly
 
+## Continuous Integration
+
+This repository uses GitHub Actions for automated testing and quality assurance:
+
+- **Automated Testing**: All pull requests and pushes to main automatically run the full test suite
+- **Build Verification**: The CI pipeline ensures the application builds successfully on every change
+- **Coverage Reports**: Test coverage is automatically generated and tracked
+- **Branch Protection**: The main branch requires passing CI checks before merging pull requests
+
+### Setting Up Branch Protection
+
+To require passing tests for pull request merges, configure branch protection rules. For detailed step-by-step instructions, see [docs/branch-protection.md](docs/branch-protection.md).
+
+**Quick Setup:**
+1. Go to repository **Settings** → **Branches**
+2. Click **Add rule** for `main` branch
+3. Enable:
+   - ☑️ **Require a pull request before merging**
+   - ☑️ **Require status checks to pass before merging**
+   - ☑️ **Require branches to be up to date before merging**
+   - Search and select the **CI** status check
+   - ☑️ **Include administrators** (recommended)
+
+This ensures all code changes go through proper review and testing before being merged.
+
 ## Development
 
 ### Running the Server

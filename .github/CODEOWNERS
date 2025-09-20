@@ -1,0 +1,12 @@
+# CODEOWNERS file for the choochoo repository
+# This file defines who is responsible for code review in specific parts of the repository
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global owners - these users will be requested for review on all PRs
+* @deedubs
+
+# GitHub configuration files require admin review
+.github/ @deedubs
+
+# Documentation changes
+*.md @deedubs

@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Validate README
+      run: |
+        echo "Validating repository structure..."
+        
+        # Check that README.md exists
+        if [ ! -f "README.md" ]; then
+          echo "❌ README.md is missing"
+          exit 1
+        fi
+        echo "✅ README.md exists"
+        
+        # Check that README has content
+        if [ ! -s "README.md" ]; then
+          echo "❌ README.md is empty"
+          exit 1
+        fi
+        echo "✅ README.md has content"
+        
+        # Basic markdown validation
+        if ! grep -q "^# " README.md; then
+          echo "❌ README.md should start with a top-level heading"
+          exit 1
+        fi
+        echo "✅ README.md has proper heading structure"
+        
+        echo "All validations passed! 🎉"
+
+  security-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run security checks
+      run: |
+        echo "Running basic security checks..."
+        
+        # Check for common sensitive files that shouldn't be committed
+        SENSITIVE_FILES=".env .env.local .env.production .env.staging id_rsa id_dsa private.key"
+        
+        for file in $SENSITIVE_FILES; do
+          if [ -f "$file" ]; then
+            echo "❌ Sensitive file detected: $file"
+            exit 1
+          fi
+        done
+        
+        echo "✅ No sensitive files detected"
+        
+        # Check for secrets in commit messages (basic check)
+        if git log --oneline -10 | grep -iE "(password|secret|key|token)" | grep -v "Initial commit"; then
+          echo "⚠️ Potential secrets found in recent commit messages"
+          echo "Please review commit messages for sensitive information"
+        else
+          echo "✅ No obvious secrets in recent commit messages"
+        fi
+        
+        echo "Security checks completed! 🔒"

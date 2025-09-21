@@ -10,6 +10,8 @@ A simple Go server for accepting GitHub webhooks.
 - ✅ Request logging and error handling
 - ✅ Health check endpoint
 - ✅ Configurable port and webhook secret
+- ✅ PostgreSQL database integration with sqlc
+- ✅ Selective webhook storage (push, issue_comment, pull_request events)
 
 ## Quick Start
 
@@ -35,8 +37,11 @@ A simple Go server for accepting GitHub webhooks.
    # With webhook secret for signature validation
    GITHUB_WEBHOOK_SECRET="your-secret" ./choochoo
    
-   # With both
-   PORT=3000 GITHUB_WEBHOOK_SECRET="your-secret" ./choochoo
+   # With database for storing webhook events
+   DATABASE_URL="postgres://user:pass@localhost:5432/choochoo?sslmode=disable" ./choochoo
+   
+   # With both secret and database
+   GITHUB_WEBHOOK_SECRET="your-secret" DATABASE_URL="postgres://user:pass@localhost:5432/choochoo?sslmode=disable" ./choochoo
    ```
 
 ## Endpoints
@@ -53,6 +58,67 @@ The server can be configured using environment variables:
 |----------|-------------|---------|
 | `PORT` | Port to run the server on | `8080` |
 | `GITHUB_WEBHOOK_SECRET` | Secret for webhook signature validation | (none) |
+| `DATABASE_URL` | PostgreSQL connection string for storing webhook events | (none) |
+
+### Database Configuration
+
+When `DATABASE_URL` is set, the server will store supported webhook events in a PostgreSQL database. The following event types are stored:
+
+- `push` - Git push events
+- `issue_comment` - Issue comment events  
+- `pull_request` - Pull request events
+
+All other webhook events are logged but not stored in the database.
+
+**Database URL Format:**
+```
+postgres://username:password@hostname:port/database_name?sslmode=disable
+```
+
+**Example:**
+```bash
+DATABASE_URL="postgres://postgres:password@localhost:5432/choochoo?sslmode=disable"
+```
+
+## Database Setup
+
+If you want to store webhook events in a PostgreSQL database:
+
+1. **Set up PostgreSQL** (if not already installed):
+   ```bash
+   # On macOS
+   brew install postgresql
+   brew services start postgresql
+   
+   # On Ubuntu/Debian
+   sudo apt-get install postgresql postgresql-contrib
+   sudo systemctl start postgresql
+   ```
+
+2. **Create the database:**
+   ```bash
+   # Connect to PostgreSQL
+   psql -U postgres
+   
+   # Create database
+   CREATE DATABASE choochoo;
+   
+   # Exit psql
+   \q
+   ```
+
+3. **Run database migrations:**
+   ```bash
+   # Apply the schema
+   psql -U postgres -d choochoo -f sql/migrations/001_webhook_events.sql
+   ```
+
+4. **Set the DATABASE_URL environment variable:**
+   ```bash
+   export DATABASE_URL="postgres://postgres:password@localhost:5432/choochoo?sslmode=disable"
+   ```
+
+The server will automatically connect to the database on startup and store supported webhook events.
 
 ## GitHub Webhook Setup
 
@@ -120,6 +186,23 @@ make coverage
 go test -v
 go test -v -cover
 ```
+
+### Database Development
+
+The project uses [sqlc](https://sqlc.dev/) for type-safe SQL operations. After modifying SQL queries or schema:
+
+```bash
+# Regenerate database code
+make sqlc-generate
+
+# Or directly:
+~/go/bin/sqlc generate
+```
+
+Database files:
+- `sql/migrations/` - Database schema migrations
+- `sql/queries/` - SQL queries for sqlc
+- `internal/db/` - Generated sqlc code (do not edit manually)
 
 ### Manual Testing
 

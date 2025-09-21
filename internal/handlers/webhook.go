@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -9,19 +10,25 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
+	"github.com/deedubs/choochoo/internal/database"
+	"github.com/deedubs/choochoo/internal/db"
 	"github.com/deedubs/choochoo/internal/webhook"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 // WebhookHandler handles GitHub webhook requests
 type WebhookHandler struct {
 	webhookSecret string
+	dbConn        *database.Connection
 }
 
 // NewWebhookHandler creates a new webhook handler
-func NewWebhookHandler(secret string) *WebhookHandler {
+func NewWebhookHandler(secret string, dbConn *database.Connection) *WebhookHandler {
 	return &WebhookHandler{
 		webhookSecret: secret,
+		dbConn:        dbConn,
 	}
 }
 
@@ -114,6 +121,18 @@ func (wh *WebhookHandler) HandleWebhook(w http.ResponseWriter, r *http.Request) 
 		log.Printf("Event action: %s", event.Action)
 	}
 
+	// Store supported events in database
+	if wh.dbConn != nil && webhook.IsSupportedEvent(eventType) {
+		if err := wh.storeWebhookEvent(r.Context(), eventType, deliveryID, repoName, senderLogin, event.Action, body); err != nil {
+			log.Printf("Failed to store webhook event in database: %v", err)
+			// Don't fail the webhook processing if database storage fails
+		} else {
+			log.Printf("Successfully stored %s event in database (delivery: %s)", eventType, deliveryID)
+		}
+	} else if !webhook.IsSupportedEvent(eventType) {
+		log.Printf("Event type %s is not stored in database (only push, issue_comment, and pull_request events are stored)", eventType)
+	}
+
 	// Send successful response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -122,4 +141,40 @@ func (wh *WebhookHandler) HandleWebhook(w http.ResponseWriter, r *http.Request) 
 		"message": "Webhook received and processed",
 	}
 	json.NewEncoder(w).Encode(response)
+}
+
+// storeWebhookEvent stores a webhook event in the database
+func (wh *WebhookHandler) storeWebhookEvent(ctx context.Context, eventType, deliveryID, repoName, senderLogin, action string, payload []byte) error {
+	// Create a context with timeout for database operations
+	dbCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	// Convert optional strings to pgtype.Text
+	var repositoryName pgtype.Text
+	if repoName != "unknown" && repoName != "" {
+		repositoryName = pgtype.Text{String: repoName, Valid: true}
+	}
+
+	var senderLoginPG pgtype.Text
+	if senderLogin != "unknown" && senderLogin != "" {
+		senderLoginPG = pgtype.Text{String: senderLogin, Valid: true}
+	}
+
+	var actionPG pgtype.Text
+	if action != "" {
+		actionPG = pgtype.Text{String: action, Valid: true}
+	}
+
+	// Store the webhook event
+	params := db.CreateWebhookEventParams{
+		DeliveryID:     deliveryID,
+		EventType:      eventType,
+		RepositoryName: repositoryName,
+		SenderLogin:    senderLoginPG,
+		Action:         actionPG,
+		Payload:        payload,
+	}
+
+	_, err := wh.dbConn.Queries().CreateWebhookEvent(dbCtx, params)
+	return err
 }

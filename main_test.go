@@ -75,7 +75,7 @@ func TestWebhookServer_RoutingIntegration(t *testing.T) {
 	mux := http.NewServeMux()
 	
 	// Create handlers with empty secret for testing
-	webhookHandler := handlers.NewWebhookHandler("")
+	webhookHandler := handlers.NewWebhookHandler("", nil)
 	healthHandler := handlers.NewHealthHandler()
 	
 	mux.HandleFunc("/webhook", webhookHandler.HandleWebhook)

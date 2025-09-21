@@ -1,14 +1,15 @@
-.PHONY: test build run clean coverage help
+.PHONY: test build run clean coverage help sqlc-generate
 
 # Default target
 help:
 	@echo "Available targets:"
-	@echo "  test      - Run all tests"
-	@echo "  coverage  - Run tests with coverage report"
-	@echo "  build     - Build the application"
-	@echo "  run       - Run the application locally"
-	@echo "  clean     - Clean build artifacts"
-	@echo "  help      - Show this help message"
+	@echo "  test            - Run all tests"
+	@echo "  coverage        - Run tests with coverage report"
+	@echo "  build           - Build the application"
+	@echo "  run             - Run the application locally"
+	@echo "  clean           - Clean build artifacts"
+	@echo "  sqlc-generate   - Generate sqlc database code"
+	@echo "  help            - Show this help message"
 
 # Run tests
 test:
@@ -41,3 +42,7 @@ deps:
 # Verify everything is working
 verify: deps test build
 	@echo "All checks passed!"
+
+# Generate sqlc database code
+sqlc-generate:
+	~/go/bin/sqlc generate

@@ -22,7 +22,7 @@ func generateSignature(payload []byte, secret string) string {
 // Tests for WebhookHandler
 
 func TestWebhookHandler_ValidateSignature_NoSecret(t *testing.T) {
-	handler := NewWebhookHandler("")
+	handler := NewWebhookHandler("", nil)
 	payload := []byte(`{"test": "data"}`)
 	
 	// Should return true when no secret is set (skip validation)
@@ -34,7 +34,7 @@ func TestWebhookHandler_ValidateSignature_NoSecret(t *testing.T) {
 
 func TestWebhookHandler_ValidateSignature_ValidSignature(t *testing.T) {
 	secret := "test-secret"
-	handler := NewWebhookHandler(secret)
+	handler := NewWebhookHandler(secret, nil)
 	payload := []byte(`{"test": "data"}`)
 	signature := generateSignature(payload, secret)
 	
@@ -45,7 +45,7 @@ func TestWebhookHandler_ValidateSignature_ValidSignature(t *testing.T) {
 }
 
 func TestWebhookHandler_ValidateSignature_InvalidSignature(t *testing.T) {
-	handler := NewWebhookHandler("test-secret")
+	handler := NewWebhookHandler("test-secret", nil)
 	payload := []byte(`{"test": "data"}`)
 	
 	result := handler.validateSignature(payload, "sha256=invalid-signature")
@@ -55,7 +55,7 @@ func TestWebhookHandler_ValidateSignature_InvalidSignature(t *testing.T) {
 }
 
 func TestWebhookHandler_ValidateSignature_MissingPrefix(t *testing.T) {
-	handler := NewWebhookHandler("test-secret")
+	handler := NewWebhookHandler("test-secret", nil)
 	payload := []byte(`{"test": "data"}`)
 	
 	result := handler.validateSignature(payload, "invalid-without-prefix")
@@ -65,7 +65,7 @@ func TestWebhookHandler_ValidateSignature_MissingPrefix(t *testing.T) {
 }
 
 func TestWebhookHandler_ValidateSignature_InvalidHex(t *testing.T) {
-	handler := NewWebhookHandler("test-secret")
+	handler := NewWebhookHandler("test-secret", nil)
 	payload := []byte(`{"test": "data"}`)
 	
 	result := handler.validateSignature(payload, "sha256=invalid-hex-data")
@@ -75,7 +75,7 @@ func TestWebhookHandler_ValidateSignature_InvalidHex(t *testing.T) {
 }
 
 func TestWebhookHandler_HandleWebhook_InvalidMethod(t *testing.T) {
-	handler := NewWebhookHandler("")
+	handler := NewWebhookHandler("", nil)
 	
 	req := httptest.NewRequest("GET", "/webhook", nil)
 	rr := httptest.NewRecorder()
@@ -88,7 +88,7 @@ func TestWebhookHandler_HandleWebhook_InvalidMethod(t *testing.T) {
 }
 
 func TestWebhookHandler_HandleWebhook_ValidRequest_NoSecret(t *testing.T) {
-	handler := NewWebhookHandler("")
+	handler := NewWebhookHandler("", nil)
 	
 	payload := `{"action":"push","repository":{"full_name":"test/repo"},"sender":{"login":"testuser"}}`
 	req := httptest.NewRequest("POST", "/webhook", bytes.NewBufferString(payload))
@@ -116,7 +116,7 @@ func TestWebhookHandler_HandleWebhook_ValidRequest_NoSecret(t *testing.T) {
 
 func TestWebhookHandler_HandleWebhook_ValidRequest_WithSecret(t *testing.T) {
 	secret := "test-secret"
-	handler := NewWebhookHandler(secret)
+	handler := NewWebhookHandler(secret, nil)
 	
 	payload := `{"action":"push","repository":{"full_name":"test/repo"},"sender":{"login":"testuser"}}`
 	payloadBytes := []byte(payload)
@@ -147,7 +147,7 @@ func TestWebhookHandler_HandleWebhook_ValidRequest_WithSecret(t *testing.T) {
 }
 
 func TestWebhookHandler_HandleWebhook_InvalidSignature(t *testing.T) {
-	handler := NewWebhookHandler("test-secret")
+	handler := NewWebhookHandler("test-secret", nil)
 	
 	payload := `{"action":"push","repository":{"full_name":"test/repo"},"sender":{"login":"testuser"}}`
 	req := httptest.NewRequest("POST", "/webhook", bytes.NewBufferString(payload))
@@ -166,7 +166,7 @@ func TestWebhookHandler_HandleWebhook_InvalidSignature(t *testing.T) {
 }
 
 func TestWebhookHandler_HandleWebhook_InvalidJSON(t *testing.T) {
-	handler := NewWebhookHandler("")
+	handler := NewWebhookHandler("", nil)
 	
 	payload := `invalid json`
 	req := httptest.NewRequest("POST", "/webhook", bytes.NewBufferString(payload))
@@ -184,7 +184,7 @@ func TestWebhookHandler_HandleWebhook_InvalidJSON(t *testing.T) {
 }
 
 func TestWebhookHandler_HandleWebhook_EmptyPayload(t *testing.T) {
-	handler := NewWebhookHandler("")
+	handler := NewWebhookHandler("", nil)
 	
 	req := httptest.NewRequest("POST", "/webhook", bytes.NewBufferString(""))
 	req.Header.Set("Content-Type", "application/json")
@@ -201,7 +201,7 @@ func TestWebhookHandler_HandleWebhook_EmptyPayload(t *testing.T) {
 }
 
 func TestWebhookHandler_HandleWebhook_GitHubEvent_OptionalFields(t *testing.T) {
-	handler := NewWebhookHandler("")
+	handler := NewWebhookHandler("", nil)
 	
 	payload := `{}`  // Empty payload with no optional fields
 	req := httptest.NewRequest("POST", "/webhook", bytes.NewBufferString(payload))

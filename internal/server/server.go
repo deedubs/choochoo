@@ -1,10 +1,12 @@
 package server
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
 
+	"github.com/deedubs/choochoo/internal/database"
 	"github.com/deedubs/choochoo/internal/handlers"
 )
 
@@ -12,6 +14,7 @@ import (
 type WebhookServer struct {
 	webhookSecret string
 	port          string
+	dbConn        *database.Connection
 }
 
 // NewWebhookServer creates a new webhook server instance
@@ -26,9 +29,25 @@ func NewWebhookServer() *WebhookServer {
 		log.Println("Warning: GITHUB_WEBHOOK_SECRET not set. Webhook signature validation will be skipped.")
 	}
 
+	// Initialize database connection if DATABASE_URL is set
+	var dbConn *database.Connection
+	if os.Getenv("DATABASE_URL") != "" {
+		ctx := context.Background()
+		var err error
+		dbConn, err = database.NewConnection(ctx)
+		if err != nil {
+			log.Printf("Warning: Failed to connect to database: %v. Webhooks will be logged but not stored.", err)
+		} else {
+			log.Println("Successfully connected to database")
+		}
+	} else {
+		log.Println("Warning: DATABASE_URL not set. Webhooks will be logged but not stored in database.")
+	}
+
 	return &WebhookServer{
 		webhookSecret: webhookSecret,
 		port:          port,
+		dbConn:        dbConn,
 	}
 }
 
@@ -36,8 +55,8 @@ func NewWebhookServer() *WebhookServer {
 func (ws *WebhookServer) Start() {
 	mux := http.NewServeMux()
 	
-	// Create handlers with the webhook secret for signature validation
-	webhookHandler := handlers.NewWebhookHandler(ws.webhookSecret)
+	// Create handlers with the webhook secret for signature validation and database connection
+	webhookHandler := handlers.NewWebhookHandler(ws.webhookSecret, ws.dbConn)
 	healthHandler := handlers.NewHealthHandler()
 	
 	// Register routes

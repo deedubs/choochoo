@@ -64,6 +64,7 @@ func TestNewWebhookServer_WithSecret(t *testing.T) {
 	// Note: webhookSecret field is now private, but we can ensure server was created
 	if srv == nil {
 		t.Error("Expected server to be created, got nil")
+
 	}
 }
 
@@ -80,39 +81,40 @@ func TestWebhookServer_RoutingIntegration(t *testing.T) {
 	mux.HandleFunc("/webhook", webhookHandler.HandleWebhook)
 	mux.HandleFunc("/health", healthHandler.HandleHealth)
 	mux.HandleFunc("/", handlers.HandleRoot)
-	
+
 	testServer := httptest.NewServer(mux)
 	defer testServer.Close()
-	
+
 	// Test health endpoint
 	resp, err := http.Get(testServer.URL + "/health")
 	if err != nil {
 		t.Fatalf("Failed to call health endpoint: %v", err)
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status 200 for health endpoint, got %d", resp.StatusCode)
 	}
-	
+
 	// Test root endpoint
 	resp, err = http.Get(testServer.URL + "/")
 	if err != nil {
 		t.Fatalf("Failed to call root endpoint: %v", err)
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status 200 for root endpoint, got %d", resp.StatusCode)
 	}
-	
-	// Test 404 for invalid path
-	resp, err = http.Get(testServer.URL + "/invalid")
-	if err != nil {
+
+
+	// Test 404 for unknown path
+	resp, err = http.Get(testServer.URL + "/unknown")
+  if err != nil {
 		t.Fatalf("Failed to call invalid endpoint: %v", err)
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusNotFound {
 		t.Errorf("Expected status 404 for invalid endpoint, got %d", resp.StatusCode)
 	}
